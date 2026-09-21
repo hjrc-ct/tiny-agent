@@ -1,0 +1,104 @@
+About C8-labs Portal & Lab Access
+
+How do I check my current user session with Kubernetes cluster is valid?
+Sign-in to c8-labs portal
+Visit the left-side navigation link: Onboarding
+If you see the text block populated with metadata, it means your current browser session is tied to a listed namespace on kubernetes cluster. If you see empty text block, you can begin onboarding again by clicking on the Start Onboarding button. This will attach namespace to your browser session.
+Open Google Cloud Shell terminal and run this command:
+Make sure you are in the c8-labs project in GCP console.
+gcloud container clusters get-credentials c8-labs-sravana-ap-21 --region asia-south2 --project c8-labs
+
+kubectl describe namespace undefined-namespace
+Expected result: Status: Active
+Note that your access is valid only for your assigned lab access time window.
+I wish to restart the C8 installation - by recreating the namespace. How to go about this?
+We do not allow recreating namespace during the lab access window. However, if you are stuck due to an issue, please connect with us on Microsoft Teams or WhatsApp. If possible, send a request with evidence screenshot and issue summary. Our backend team will review and assist you.
+Having said that, here are the steps to recreate the namespace and restart the installation.
+To restart the installation steps, you need to perform reset at two places.
+
+Delete namespace in kubernetes cluster (Executed by backend team)
+Clear cache in your C8-portal browser (Executed by user)
+Sign-in to c8-labs portal
+Visit the left-side navigation link: Logout (or Before you leave). The steps are also outlined here on this page.
+Open Google Cloud Shell terminal and run below command(s):
+gcloud container clusters get-credentials c8-labs-sravana-ap-21 --region asia-south2 --project c8-labs
+
+kubectl delete namespace undefined-namespace
+⚠️ Caution: Delete permission may not be delegated to your account. Please contact administrator about deleting the namespace (through the backend).
+
+Click on Clear Cache link to remove metadata from your browser session.
+You can now go to Home page and start again. When you reach Onboarding section, the Start Onboarding button should be available.
+I wish to restart the C8 installation only - retaining other configurations so far. How to go about this?
+To restart the Camunda installation alone, you need to uninstall Camunda.
+
+Sign-in to c8-labs portal
+Visit the left-side navigation link: Camunda. The steps are also outlined here on this page.
+Open Google Cloud Shell terminal and run below command(s):
+gcloud container clusters get-credentials c8-labs-sravana-ap-21 --region asia-south2 --project c8-labs
+helm uninstall undefined-namespace --namespace undefined-namespace
+⚠️ Caution: Wait until all the Pods are dissolved, storage released, etc as it may take a minute or so.
+
+You can now go to Camunda section and run the step Helm install camunda-platform again.
+What sort of automated emails will user be receiving during the lab access window?
+The system sends two types of automated emails during the lab access window.
+
+Onboarding email with subject CEP - Onboarding - C8 Learning and Enablement.
+- This email is sent once the user clicks on Start Onboarding button and the onboarding process is successful.
+Lab Usage Report with subject CEP - GKE Lab Usage Report for $NAMESPACE.
+- This email is sent after you completed the Onboarding (email format shown above).
+- For Free Tier access, you will see an email every two hours. So expect 3 emails (max: 4) during your lab access window.
+- For Premium Tier access, you will see an email every six hours, i.e., a maximum of 4 emails each day. Given the lab access window is 48 hours, you will see 8 emails (max: 9) overall.
+- Our intention is to provide you with a snapshot of your lab usage and resource consumption.
+- Emails are delivered from contact-at-makelabs.in. Please be cautious of any other email addresses claiming to be from us. If you have any doubts, please contact us on MS Teams or WhatsApp.
+- We value your privacy. We do not send any unsolicited emails. The only emails you will receive are the two types mentioned above.
+I messed up browser session and want to start again. How do I clear my browser cache?
+Use the button below to clear your browser cache. This will remove metadata associated with your account.
+
+Clear Cache
+
+After clearing the cache, you can go to Onboarding section on left-side Navigation to start again.
+You can check the value displayed in the header section (top of the page) to confirm if the desired value appears.
+
+Certificate related
+
+How to compare if a given pem certificate is associated with a URL endpoint?
+Run the two commands below and see if the hash generated match.
+
+openssl x509 -in cert.pem -pubkey -noout | openssl md5
+
+openssl s_client -connect undefined-namespace.makelabs.in:443 -showcerts /dev/null | openssl x509 -pubkey -noout | openssl md5
+
+I have a secret that contains JKS. How to get it to local file system?
+kubectl get secret elastic-jks -n undefined-namespace -o jsonpath='{.data.externaldb\.jks}' | base64 --decode > my-local-keystore.jks
+
+How to list certificates in a given JKS?
+keytool -list -v -keystore my-local-keystore.jks -storepass keystore-password-here
+
+How to get certificates for a given endpoint?
+openssl s_client -connect cep_api_config_gw_an_gateway_dev:443 -showcerts
+
+Kubernetes related
+
+How to view the logs associated with Pod(s)?
+View the last 100 lines or continue to tail logs.
+
+kubectl get pods -n ${UNAMESPACE}
+kubectl logs -n ${UNAMESPACE} ${UNAMESPACE}-keycloak-0
+kubectl logs -n ${UNAMESPACE} ${UNAMESPACE}-keycloak-0 -f
+How to check the status of Ingress object?
+kubectl describe ingress ${UNAMESPACE}-ingress-keycloak -n ${UNAMESPACE}
+kubectl describe ingress ${UNAMESPACE}-ingress -n ${UNAMESPACE}
+kubectl describe ingress ${UNAMESPACE}-zeebe-gateway-http -n ${UNAMESPACE}
+
+This shows:
+  Hostnames
+  Paths
+  Backend services
+  Events (errors, provisioning issues)
+  Assigned IP/Load Balancer
+
+How to open a terminal session with a running pod?
+kubectl get pods -n ${UNAMESPACE}
+kubectl exec -it -n ${UNAMESPACE} pod-name-here -- /bin/bash
+Get list of pods in your namespace.
+Copy the pod name and use the second command to create a session.

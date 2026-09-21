@@ -1,0 +1,39 @@
+Camunda 8 uses Zeebe as its workflow engine.
+
+Zeebe executes BPMN processes using a distributed architecture.
+A Camunda 8 cluster can contain multiple Zeebe brokers.
+
+Operate is used to monitor and troubleshoot running processes.
+
+Tasklist is used to manage human tasks.
+
+Connectors provide integrations with external systems.
+
+About C8-Labs
+C8-Labs is a hands-on learning platform for Camunda 8 Self-Managed on Kubernetes. In this self-paced program, you'll build and operate a complete Camunda 8 environment in a dedicated namespace within a Google Kubernetes Engine (GKE) cluster through guided labs. Each exercise includes detailed instructions, validation steps, and real-world scenarios to help you gain practical experience. Whether you're new to Camunda 8 or preparing for real-world deployments, C8-Labs provides a structured environment to learn by doing.
+
+What You'll Learn / Do
+
+By the end of the labs, you'll be able to:
+
+Deploy Camunda 8 on Kubernetes/GCP
+Inside view of Kubernetes objects and Topology
+Deploy and operate Zeebe Orchestration, Operate, Tasklist, Identity, Optimize, and Connectors
+Monitor workloads using Prometheus and Grafana
+Troubleshoot deployment issues
+Scale and manage Camunda components
+There are a few advanced lab exercises included in this program.
+Increase the partition count of the Zeebe cluster
+Review the persistent volume file system structure
+Pause and resume the exporter and monitor the indicators in Grafana
+Generate a burst of transaction volume while the exporter is paused
+
+
+Need Help?
+
+If you have any questions or need assistance, please reach out to us through the following channels:
+
+Email: contact-at-makelabs.in
+WhatsApp +91 9353 800 430
+Open Teams Chat https://teams.microsoft.com/l/chat/0/0?users=raghu@makelabs.in&message=Hello%20Raghu%20Need%20assistance%20with%20an%20issue%20in%20c8-labs
+Open Google Chat  raghavendra.chari at gmail.com

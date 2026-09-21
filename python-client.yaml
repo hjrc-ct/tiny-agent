@@ -21,7 +21,20 @@ spec:
       containers:
         - name: python-client
 
-          image: asia-south2-docker.pkg.dev/c8-labs/tiny-agent/python-client:1.0
+          image: asia-south2-docker.pkg.dev/c8-labs/tiny-agent/python-client:5.0
+
+          env:
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: rootUser
+
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: rootPassword
 
           resources:
             requests:
@@ -30,3 +43,20 @@ spec:
             limits:
               cpu: "1"
               memory: "1Gi"
+
+          ports:
+            - containerPort: 8080
+              name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-client
+  namespace: tiny-agent
+spec:
+  selector:
+    app: python-client
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP

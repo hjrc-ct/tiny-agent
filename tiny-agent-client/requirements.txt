@@ -1,2 +1,6 @@
 requests
 chromadb
+minio
+pymupdf
+fastapi
+uvicorn

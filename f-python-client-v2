@@ -1,0 +1,8 @@
+# Let's include Qwen3 LLM and new API service "/ask"
+#
+kubectl exec -it -n tiny-agent deployment/ollama -- \
+  ollama pull qwen3:1.7b
+
+kubectl exec -it -n tiny-agent deployment/ollama -- \
+  ollama list
+

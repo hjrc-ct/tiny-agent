@@ -15,9 +15,9 @@ gcloud artifacts repositories create tiny-agent \
 
 gcloud auth configure-docker asia-south2-docker.pkg.dev
 
-docker build -t asia-south2-docker.pkg.dev/c8-labs/tiny-agent/python-client:1.0 .
+docker build -t asia-south2-docker.pkg.dev/c8-labs/tiny-agent/python-client:v9 .
 
-docker push asia-south2-docker.pkg.dev/c8-labs/tiny-agent/python-client:1.0
+docker push asia-south2-docker.pkg.dev/c8-labs/tiny-agent/python-client:v9
 
 # Go back to the parent folder and deploy the service: python client
 kubectl apply -f ../python-client.yaml

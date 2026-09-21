@@ -1,36 +1,62 @@
 import hashlib
 import io
 import os
+import time
+from typing import List
 
 import chromadb
-import pymupdf
 import requests
-
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException
 from minio import Minio
+import fitz
 import uvicorn
 
 
-# --------------------------------------------------
+# ============================================================
 # Configuration
-# --------------------------------------------------
+# ============================================================
 
-MINIO_ENDPOINT = "minio.tiny-agent.svc.cluster.local:9000"
-MINIO_ACCESS_KEY = os.environ["MINIO_ACCESS_KEY"]
-MINIO_SECRET_KEY = os.environ["MINIO_SECRET_KEY"]
+MINIO_ENDPOINT = os.getenv(
+    "MINIO_ENDPOINT",
+    "minio.tiny-agent.svc.cluster.local:9000"
+)
 
-BUCKET = "knowledge"
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
 
-OLLAMA_URL = "http://ollama.tiny-agent.svc.cluster.local:11434"
-EMBEDDING_MODEL = "qwen3-embedding:0.6b"
+MINIO_BUCKET = os.getenv("MINIO_BUCKET", "knowledge")
 
-CHROMA_HOST = "chroma.tiny-agent.svc.cluster.local"
-CHROMA_PORT = 8000
+CHROMA_HOST = os.getenv(
+    "CHROMA_HOST",
+    "chroma.tiny-agent.svc.cluster.local"
+)
+
+CHROMA_PORT = int(os.getenv("CHROMA_PORT", "8000"))
+
+OLLAMA_URL = os.getenv(
+    "OLLAMA_URL",
+    "http://ollama.tiny-agent.svc.cluster.local:11434"
+)
+
+EMBED_MODEL = os.getenv(
+    "EMBED_MODEL",
+    "qwen3-embedding:0.6b"
+)
+
+CHAT_MODEL = os.getenv(
+    "CHAT_MODEL",
+    "qwen3:1.7b"
+)
+
+CHUNK_SIZE = 1200
+CHUNK_OVERLAP = 200
+
+OLLAMA_TIMEOUT = 120
 
 
-# --------------------------------------------------
+# ============================================================
 # Clients
-# --------------------------------------------------
+# ============================================================
 
 minio_client = Minio(
     MINIO_ENDPOINT,
@@ -39,67 +65,40 @@ minio_client = Minio(
     secure=False,
 )
 
-chroma = chromadb.HttpClient(
+chroma_client = chromadb.HttpClient(
     host=CHROMA_HOST,
     port=CHROMA_PORT,
 )
 
-collection = chroma.get_or_create_collection(
+collection = chroma_client.get_or_create_collection(
     name="knowledge"
 )
 
-manifest_collection = chroma.get_or_create_collection(
-    name="document_manifest"
-)
+app = FastAPI(title="Tiny Agent")
 
 
-# --------------------------------------------------
-# FastAPI
-# --------------------------------------------------
-
-app = FastAPI()
-
-
-# --------------------------------------------------
-# Embeddings
-# --------------------------------------------------
-
-def embed(text):
-    response = requests.post(
-        f"{OLLAMA_URL}/api/embed",
-        json={
-            "model": EMBEDDING_MODEL,
-            "input": text,
-        },
-        timeout=120,
-    )
-
-    response.raise_for_status()
-
-    return response.json()["embeddings"][0]
-
-
-# --------------------------------------------------
+# ============================================================
 # MinIO
-# --------------------------------------------------
+# ============================================================
+
+def ensure_bucket():
+    if not minio_client.bucket_exists(MINIO_BUCKET):
+        minio_client.make_bucket(MINIO_BUCKET)
+
 
 def list_objects():
-    objects = []
-
-    for item in minio_client.list_objects(
-        BUCKET,
-        recursive=True,
-    ):
-        if not item.is_dir:
-            objects.append(item.object_name)
-
-    return objects
+    return list(
+        minio_client.list_objects(
+            MINIO_BUCKET,
+            recursive=True
+        )
+    )
 
 
-def read_object(object_name):
+def read_object(object_name: str) -> bytes:
     response = minio_client.get_object(
-        BUCKET,
-        object_name,
+        MINIO_BUCKET,
+        object_name
     )
 
     try:
@@ -109,80 +108,56 @@ def read_object(object_name):
         response.release_conn()
 
 
-def get_etag(object_name):
-    stat = minio_client.stat_object(
-        BUCKET,
-        object_name,
-    )
-
-    return stat.etag.strip('"')
-
-
-# --------------------------------------------------
+# ============================================================
 # Document extraction
-# --------------------------------------------------
+# ============================================================
 
-def extract_document(object_name, data):
-    lower = object_name.lower()
+def extract_document(object_name: str, data: bytes) -> str:
+    name = object_name.lower()
 
-    # PDF
-    if lower.endswith(".pdf"):
+    if name.endswith(".txt"):
+        return data.decode("utf-8", errors="replace")
+
+    if name.endswith(".pdf"):
         return extract_pdf(data)
 
-    # TXT
-    if lower.endswith(".txt"):
-        text = data.decode("utf-8", errors="replace")
-
-        return [
-            {
-                "text": text,
-                "page": None,
-            }
-        ]
-
-    print(f"Skipping unsupported file: {object_name}")
-
-    return []
-
-
-def extract_pdf(data):
-    pages = []
-
-    document = pymupdf.open(
-        stream=data,
-        filetype="pdf",
+    raise ValueError(
+        f"Unsupported document type: {object_name}"
     )
 
+
+def extract_pdf(data: bytes) -> str:
+    document = fitz.open(
+        stream=data,
+        filetype="pdf"
+    )
+
+    pages = []
+
     try:
-        for page_number, page in enumerate(document):
-            text = page.get_text(
-                "text",
-                sort=True,
-            )
+        for page_number, page in enumerate(document, start=1):
+            text = page.get_text("text")
 
             if text.strip():
                 pages.append(
-                    {
-                        "text": text,
-                        "page": page_number + 1,
-                    }
+                    f"[Page {page_number}]\n{text}"
                 )
-
     finally:
         document.close()
 
-    return pages
+    return "\n\n".join(pages)
 
 
-# --------------------------------------------------
+# ============================================================
 # Chunking
-# --------------------------------------------------
+# ============================================================
 
-CHUNK_SIZE = 1200
-CHUNK_OVERLAP = 200
+def chunk_text(
+    text: str,
+    chunk_size: int = CHUNK_SIZE,
+    overlap: int = CHUNK_OVERLAP,
+) -> List[str]:
 
-
-def chunk_text(text):
     text = text.strip()
 
     if not text:
@@ -191,12 +166,13 @@ def chunk_text(text):
     chunks = []
 
     start = 0
+    text_length = len(text)
 
-    while start < len(text):
+    while start < text_length:
 
         end = min(
-            start + CHUNK_SIZE,
-            len(text),
+            start + chunk_size,
+            text_length
         )
 
         chunk = text[start:end].strip()
@@ -204,19 +180,52 @@ def chunk_text(text):
         if chunk:
             chunks.append(chunk)
 
-        if end >= len(text):
+        if end >= text_length:
             break
 
-        start = end - CHUNK_OVERLAP
+        start = end - overlap
 
     return chunks
 
 
-# --------------------------------------------------
-# Stable chunk IDs
-# --------------------------------------------------
+# ============================================================
+# Embeddings
+# ============================================================
 
-def chunk_id(object_name, chunk_number):
+def embed(text: str) -> List[float]:
+
+    response = requests.post(
+        f"{OLLAMA_URL}/api/embed",
+        json={
+            "model": EMBED_MODEL,
+            "input": text,
+        },
+        timeout=OLLAMA_TIMEOUT,
+    )
+
+    response.raise_for_status()
+
+    payload = response.json()
+
+    embeddings = payload.get("embeddings")
+
+    if not embeddings:
+        raise RuntimeError(
+            "Ollama returned no embeddings"
+        )
+
+    return embeddings[0]
+
+
+# ============================================================
+# Chroma helpers
+# ============================================================
+
+def make_chunk_id(
+    object_name: str,
+    chunk_number: int
+) -> str:
+
     value = f"{object_name}:{chunk_number}"
 
     return hashlib.sha256(
@@ -224,65 +233,35 @@ def chunk_id(object_name, chunk_number):
     ).hexdigest()
 
 
-# --------------------------------------------------
-# Incremental ingestion
-# --------------------------------------------------
+def delete_source_chunks(object_name: str):
 
-def get_manifest(object_name):
-
-    result = manifest_collection.get(
-        ids=[object_name],
-        include=["metadatas"],
+    existing = collection.get(
+        where={
+            "source": object_name
+        },
+        include=[]
     )
 
-    if not result["ids"]:
-        return None
+    ids = existing.get("ids", [])
 
-    return result["metadatas"][0]
-
-
-def remove_old_chunks(object_name, old_chunk_count):
-
-    if old_chunk_count <= 0:
-        return
-
-    ids = [
-        chunk_id(object_name, i)
-        for i in range(old_chunk_count)
-    ]
-
-    collection.delete(
-        ids=ids
-    )
-
-
-def ingest(object_name):
-
-    etag = get_etag(object_name)
-
-    previous = get_manifest(object_name)
-
-    if previous:
-        previous_etag = previous.get("etag")
-
-        if previous_etag == etag:
-            print(
-                f"Skipping unchanged document: {object_name}"
-            )
-            return False
-
-        old_chunk_count = int(
-            previous.get("chunk_count", 0)
+    if ids:
+        collection.delete(
+            ids=ids
         )
 
         print(
-            f"Document changed: {object_name}"
+            f"Deleted {len(ids)} old chunks "
+            f"for {object_name}"
         )
 
-        remove_old_chunks(
-            object_name,
-            old_chunk_count,
-        )
+
+# ============================================================
+# Ingestion
+# ============================================================
+
+def ingest_object(obj):
+
+    object_name = obj.object_name
 
     print(f"Reading: {object_name}")
 
@@ -292,90 +271,84 @@ def ingest(object_name):
         f"Bytes: {len(data)}"
     )
 
-    units = extract_document(
+    text = extract_document(
         object_name,
-        data,
+        data
     )
 
-    documents = []
-    embeddings = []
-    metadatas = []
-    ids = []
+    chunks = chunk_text(text)
 
-    chunk_number = 0
-
-    for unit in units:
-
-        page = unit["page"]
-
-        chunks = chunk_text(unit["text"])
-
-        for chunk in chunks:
-
-            print(
-                f"Embedding {object_name} "
-                f"chunk {chunk_number}"
-            )
-
-            vector = embed(chunk)
-
-            metadata = {
-                "source": object_name,
-                "chunk": chunk_number,
-            }
-
-            if page is not None:
-                metadata["page"] = page
-
-            documents.append(chunk)
-            embeddings.append(vector)
-            metadatas.append(metadata)
-
-            ids.append(
-                chunk_id(
-                    object_name,
-                    chunk_number,
-                )
-            )
-
-            chunk_number += 1
-
-    if not documents:
+    if not chunks:
         print(
-            f"No text found: {object_name}"
+            f"No text extracted from {object_name}"
         )
-        return False
+        return 0
 
-    collection.upsert(
-        ids=ids,
-        documents=documents,
-        embeddings=embeddings,
-        metadatas=metadatas,
-    )
+    # Replace existing chunks for this source.
+    delete_source_chunks(object_name)
 
-    manifest_collection.upsert(
-        ids=[object_name],
-        metadatas=[
-            {
-                "etag": etag,
-                "chunk_count": chunk_number,
-            }
-        ],
-    )
+    count = 0
+
+    for chunk_number, chunk in enumerate(chunks):
+
+        print(
+            f"Embedding "
+            f"{object_name} chunk {chunk_number}"
+        )
+
+        vector = embed(chunk)
+
+        chunk_id = make_chunk_id(
+            object_name,
+            chunk_number
+        )
+
+        metadata = {
+            "source": object_name,
+            "chunk": chunk_number,
+            "etag": obj.etag,
+        }
+
+        # Do this one chunk at a time.
+        # It makes the prototype easier to reason about
+        # and avoids list-length/API ambiguity.
+        collection.upsert(
+            ids=[chunk_id],
+            documents=[chunk],
+            embeddings=[vector],
+            metadatas=[metadata],
+        )
+
+        count += 1
 
     print(
-        f"Ingested {object_name}: "
-        f"{chunk_number} chunks"
+        f"Indexed {count} chunks from {object_name}"
     )
 
-    return True
+    return count
 
 
-# --------------------------------------------------
-# Ingest everything
-# --------------------------------------------------
+def ingest_all(reset: bool = False):
 
-def ingest_all():
+    global collection
+
+    ensure_bucket()
+
+    if reset:
+        print("RESET requested")
+
+        try:
+            chroma_client.delete_collection(
+                "knowledge"
+            )
+        except Exception:
+            pass
+
+        collection = chroma_client.get_or_create_collection(
+            name="knowledge"
+        )
+
+        print("Chroma collection recreated")
 
     objects = list_objects()
 
@@ -383,43 +356,48 @@ def ingest_all():
         f"Objects found: {len(objects)}"
     )
 
-    for object_name in objects:
+    total = 0
+
+    for obj in objects:
+
+        # Ignore directory placeholders.
+        if not obj.object_name:
+            continue
 
         try:
-            ingest(object_name)
+            total += ingest_object(obj)
 
-        except Exception as e:
+        except Exception as exc:
             print(
                 f"ERROR ingesting "
-                f"{object_name}: {e}"
+                f"{obj.object_name}: {exc}"
             )
 
-
-# --------------------------------------------------
-# Search
-# --------------------------------------------------
-
-@app.get("/health")
-def health():
+    print(
+        f"Collection count: "
+        f"{collection.count()}"
+    )
 
     return {
-        "status": "ok",
+        "objects": len(objects),
+        "chunks_indexed": total,
         "collection_count": collection.count(),
     }
 
 
-@app.get("/search")
-def search(
-    q: str = Query(...),
-    n: int = Query(5),
+# ============================================================
+# Retrieval
+# ============================================================
+
+def retrieve(
+    query: str,
+    n: int = 5
 ):
 
-    query_embedding = embed(q)
+    query_vector = embed(query)
 
-    results = collection.query(
-        query_embeddings=[
-            query_embedding
-        ],
+    result = collection.query(
+        query_embeddings=[query_vector],
         n_results=n,
         include=[
             "documents",
@@ -428,40 +406,331 @@ def search(
         ],
     )
 
-    matches = []
+    documents = result.get(
+        "documents",
+        [[]]
+    )[0]
 
-    for i in range(
-        len(results["documents"][0])
-    ):
+    metadatas = result.get(
+        "metadatas",
+        [[]]
+    )[0]
 
-        matches.append(
-            {
-                "text": results["documents"][0][i],
-                "metadata": results["metadatas"][0][i],
-                "distance": results["distances"][0][i],
-            }
+    distances = result.get(
+        "distances",
+        [[]]
+    )[0]
+
+    results = []
+
+    for i, document in enumerate(documents):
+
+        metadata = (
+            metadatas[i]
+            if i < len(metadatas)
+            else {}
         )
 
-    return {
-        "query": q,
-        "results": matches,
-    }
+        distance = (
+            distances[i]
+            if i < len(distances)
+            else None
+        )
+
+        results.append({
+            "text": document,
+            "metadata": metadata,
+            "distance": distance,
+        })
+
+    return results
 
 
-# --------------------------------------------------
-# Startup
-# --------------------------------------------------
+# ============================================================
+# Context
+# ============================================================
+
+def build_context(results):
+
+    parts = []
+
+    for index, result in enumerate(results, start=1):
+
+        metadata = result["metadata"]
+
+        source = metadata.get(
+            "source",
+            "unknown"
+        )
+
+        chunk = metadata.get(
+            "chunk",
+            0
+        )
+
+        text = result["text"]
+
+        parts.append(
+            f"[SOURCE {index}]\n"
+            f"Document: {source}\n"
+            f"Chunk: {chunk}\n"
+            f"Content:\n{text}"
+        )
+
+    return "\n\n".join(parts)
+
+
+# ============================================================
+# Answer generation
+# ============================================================
+
+def generate_answer(
+    question: str,
+    context: str,
+):
+
+    system_prompt = """
+You are a private knowledge-base assistant.
+
+Answer the user's question using ONLY the supplied
+knowledge-base context.
+
+Rules:
+
+1. Do not use outside knowledge.
+2. Do not invent facts.
+3. Do not assume information that is not present.
+4. If the context does not contain enough information,
+   say that the available documents do not provide
+   enough information to answer the question.
+5. When making a factual statement, cite the relevant
+   source using [SOURCE N].
+6. Keep the answer concise and useful.
+""".strip()
+
+    user_prompt = f"""
+Knowledge-base context:
+
+{context}
+
+---
+
+Question:
+
+{question}
+
+Answer using only the knowledge-base context.
+""".strip()
+
+    response = requests.post(
+        f"{OLLAMA_URL}/api/chat",
+        json={
+            "model": CHAT_MODEL,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_prompt,
+                },
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                },
+            ],
+            "stream": False,
+            "think": False,
+            "options": {
+                "num_predict": 256,
+                "temperature": 0.1
+            },
+        },
+        timeout=OLLAMA_TIMEOUT,
+    )
+
+    response.raise_for_status()
+
+    payload = response.json()
+
+    message = payload.get("message", {})
+
+    answer = message.get(
+        "content",
+        ""
+    ).strip()
+
+    if not answer:
+        raise RuntimeError(
+            "Ollama returned an empty answer"
+        )
+
+    return answer
+
+
+# ============================================================
+# API
+# ============================================================
+
+@app.get("/health")
+def health():
+
+    try:
+        heartbeat = chroma_client.heartbeat()
+
+        return {
+            "status": "ok",
+            "chroma": heartbeat,
+            "collection_count": collection.count(),
+        }
+
+    except Exception as exc:
+
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc)
+        )
+
+
+@app.post("/ingest")
+def ingest_endpoint(
+    reset: bool = False
+):
+
+    try:
+
+        result = ingest_all(
+            reset=reset
+        )
+
+        return {
+            "status": "ok",
+            **result,
+        }
+
+    except Exception as exc:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(exc)
+        )
+
+
+@app.get("/search")
+def search(
+    q: str,
+    n: int = 5,
+):
+
+    if not q.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="q is required"
+        )
+
+    try:
+
+        results = retrieve(
+            q,
+            n
+        )
+
+        return {
+            "query": q,
+            "results": results,
+        }
+
+    except Exception as exc:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(exc)
+        )
+
+
+@app.get("/ask")
+def ask(
+    q: str,
+    n: int = 5,
+):
+
+    if not q.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="q is required"
+        )
+
+    try:
+
+        results = retrieve(
+            q,
+            n
+        )
+
+        if not results:
+
+            return {
+                "query": q,
+                "answer": (
+                    "The knowledge base does not "
+                    "contain enough information "
+                    "to answer this question."
+                ),
+                "sources": [],
+            }
+
+        context = build_context(
+            results
+        )
+
+        answer = generate_answer(
+            q,
+            context
+        )
+
+        sources = []
+
+        for result in results:
+
+            metadata = result["metadata"]
+
+            sources.append({
+                "source": metadata.get(
+                    "source"
+                ),
+                "chunk": metadata.get(
+                    "chunk"
+                ),
+                "distance": result.get(
+                    "distance"
+                ),
+            })
+
+        return {
+            "query": q,
+            "answer": answer,
+            "sources": sources,
+        }
+
+    except requests.RequestException as exc:
+
+        raise HTTPException(
+            status_code=502,
+            detail=f"Ollama request failed: {exc}"
+        )
+
+    except Exception as exc:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(exc)
+        )
+
+
+# ============================================================
+# Main
+# ============================================================
 
 if __name__ == "__main__":
 
-    print("Starting ingestion...")
-
-    ingest_all()
-
-    print(
-        f"Collection count: "
-        f"{collection.count()}"
-    )
+    print("Starting Tiny Agent API")
 
     uvicorn.run(
         app,

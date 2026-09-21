@@ -6,3 +6,24 @@ kubectl exec -it -n tiny-agent deployment/ollama -- \
 kubectl exec -it -n tiny-agent deployment/ollama -- \
   ollama list
 
+# Test ollama directly to see if it works
+kubectl exec -it -n tiny-agent deployment/ollama -- \
+  ollama run qwen3:1.7b \
+  "What is Zeebe?"
+
+kubectl port-forward \
+  -n tiny-agent \
+  svc/python-client \
+  8080:8080
+
+# Rebuild the knowledge
+curl -X POST \
+  "http://localhost:8080/ingest?reset=true"
+# Expected output: {"status":"ok","objects":2,"chunks_indexed":9,"collection_count":9}
+
+
+# Test retrieval / search API
+curl "http://localhost:8080/search?q=What%20is%20Zeebe&n=5"
+
+# Test API call: "/ask"
+curl "http://localhost:8080/ask?q=What%20is%20Zeebe&n=5"

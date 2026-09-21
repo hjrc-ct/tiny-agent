@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-client
+  namespace: tiny-agent
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: python-client
+
+  template:
+    metadata:
+      labels:
+        app: python-client
+
+    spec:
+      enableServiceLinks: false
+
+      containers:
+        - name: python-client
+
+          image: asia-south2-docker.pkg.dev/c8-labs/tiny-agent/python-client:1.0
+
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"

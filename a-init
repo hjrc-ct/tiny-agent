@@ -1,0 +1,11 @@
+# Open terminal window and login to GCP 
+gcp auth login
+
+# Set the k8s context
+gcloud container clusters get-credentials c8-labs-sravana-ap-21 --region asia-south2 --project c8-labs
+
+
+# create namespace tiny-agent
+kubectl create namespace tiny-agent
+
+kubectl get namespace tiny-agent

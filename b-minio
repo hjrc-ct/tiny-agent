@@ -1,0 +1,22 @@
+helm repo add minio https://charts.min.io/
+helm repo update
+
+###
+MINIOROOTPWD=makelabs envsubst < minio-values.yaml > minio-values.my-ns.yaml
+
+helm upgrade --install minio minio/minio \
+  --namespace tiny-agent \
+  --values minio-values.my-ns.yaml
+# At this point, you have the minio pod running. (you may have to wait a minute or so)
+
+
+###
+# Use Project Lens app or below two commands, to set port-forward
+export POD_NAME=$(kubectl get pods --namespace tiny-agent -l "release=minio" -o jsonpath="{.items[0].metadata.name}")
+
+kubectl port-forward $POD_NAME 9001 --namespace tiny-agent
+# run port forward to enable access via your laptop
+# such as http://localhost:9001/buckets
+
+###
+# Using the minio UI, create new bucket: knowledge

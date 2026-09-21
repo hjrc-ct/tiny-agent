@@ -1,0 +1,66 @@
+# Run Chroma installation. See debug commands at the end of this file.
+kubectl apply -f chroma.yaml
+
+kubectl get pods -n tiny-agent
+
+
+kubectl port-forward -n tiny-agent svc/chroma 8000:8000
+
+# Test with this api
+curl http://localhost:8000/api/v2/heartbeat
+
+
+########
+######
+####
+# To debug the Chroma pod, you can use the following commands:
+kubectl get pod -n tiny-agent -l app=chroma -o wide
+
+kubectl describe pod -n tiny-agent -l app=chroma | grep -A20 -E "State:|Last State:"
+
+kubectl logs -n tiny-agent -l app=chroma --tail=100
+
+kubectl get events -n tiny-agent --sort-by='.lastTimestamp'
+
+
+LAST SEEN   TYPE      REASON                           OBJECT                        MESSAGE
+44m         Warning   FailedScheduling                 pod/minio-c46f67cf8-n2gqq     0/2 nodes are available: 1 Insufficient memory, 1 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/2 nodes are available: 1 No preemption victims found for incoming pod, 1 Preemption is not helpful for scheduling.
+44m         Normal    ScalingReplicaSet                deployment/minio              Scaled up replica set minio-c46f67cf8 from 0 to 1
+44m         Normal    SuccessfulCreate                 replicaset/minio-c46f67cf8    Created pod: minio-c46f67cf8-n2gqq
+44m         Normal    SuccessfulCreate                 job/minio-post-job            Created pod: minio-post-job-27j7v
+44m         Warning   FailedScheduling                 pod/minio-post-job-27j7v      0/2 nodes are available: 1 Insufficient memory, 1 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/2 nodes are available: 1 No preemption victims found for incoming pod, 1 Preemption is not helpful for scheduling.
+44m         Normal    TriggeredScaleUp                 pod/minio-c46f67cf8-n2gqq     Pod triggered scale-up: [{https://www.googleapis.com/compute/v1/projects/c8-labs/zones/asia-south2-a/instanceGroups/gk3-c8-labs-sravana-ap-21-pool-1-dee7e340-grp 1->2 (max: 1000)}]
+43m         Warning   FailedScheduling                 pod/minio-post-job-27j7v      0/3 nodes are available: 1 Insufficient memory, 2 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/3 nodes are available: 1 No preemption victims found for incoming pod, 2 Preemption is not helpful for scheduling.
+43m         Warning   FailedScheduling                 pod/minio-c46f67cf8-n2gqq     0/3 nodes are available: 1 Insufficient memory, 2 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/3 nodes are available: 1 No preemption victims found for incoming pod, 2 Preemption is not helpful for scheduling.
+43m         Normal    Scheduled                        pod/minio-post-job-27j7v      Successfully assigned tiny-agent/minio-post-job-27j7v to gk3-c8-labs-sravana-ap-21-pool-1-dee7e340-8zkl
+43m         Normal    TaintManagerEviction             pod/minio-post-job-27j7v      Cancelling deletion of Pod tiny-agent/minio-post-job-27j7v
+43m         Warning   FailedScheduling                 pod/minio-c46f67cf8-n2gqq     0/3 nodes are available: 1 Insufficient memory, 1 node(s) didn't match PersistentVolume's node affinity, 1 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/3 nodes are available: 1 No preemption victims found for incoming pod, 2 Preemption is not helpful forscheduling.
+43m         Normal    Pulling                          pod/minio-post-job-27j7v      Pulling image "quay.io/minio/mc:RELEASE.2024-11-21T17-21-54Z"
+43m         Warning   FailedScheduling                 pod/minio-c46f67cf8-n2gqq     0/3 nodes are available: 1 node(s) didn't match PersistentVolume's node affinity, 2 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/3nodes are available: 3 Preemption is not helpful for scheduling.
+43m         Normal    Scheduled                        pod/minio-c46f67cf8-n2gqq     Successfully assigned tiny-agent/minio-c46f67cf8-n2gqq to gk3-c8-labs-sravana-ap-21-pool-1-dee7e340-jxgz
+43m         Normal    SuccessfulAttachVolume           pod/minio-c46f67cf8-n2gqq     AttachVolume.Attach succeeded for volume "pvc-0047276b-0fad-463e-8fd7-99db7947ad0a"
+43m         Normal    Started                          pod/minio-c46f67cf8-n2gqq     Container started
+43m         Normal    Created                          pod/minio-c46f67cf8-n2gqq     Container created
+43m         Normal    Pulled                           pod/minio-c46f67cf8-n2gqq     Container image "quay.io/minio/minio:RELEASE.2024-12-18T13-15-44Z" already present on machine and can be accessed by the pod
+43m         Normal    Started                          pod/minio-post-job-27j7v      Container started
+43m         Normal    Created                          pod/minio-post-job-27j7v      Container created
+43m         Normal    Pulled                           pod/minio-post-job-27j7v      Successfully pulled image "quay.io/minio/mc:RELEASE.2024-11-21T17-21-54Z" in 6.847s (16.67s including waiting). Image size: 28122288 bytes.
+43m         Normal    Completed                        job/minio-post-job            Job completed
+5m58s       Normal    DELETE                           service/chroma                tiny-agent/chroma
+5m55s       Normal    DNSRecordProvisioningSucceeded   service/chroma                DNS records updated
+100s        Normal    SuccessfulCreate                 replicaset/chroma-59b5787c8   Created pod: chroma-59b5787c8-r5hrm
+100s        Normal    ScalingReplicaSet                deployment/chroma             Scaled up replica set chroma-59b5787c8from 0 to 1
+100s        Warning   FailedScheduling                 pod/chroma-59b5787c8-r5hrm    0/5 nodes are available: 1 Insufficient cpu, 1 node(s) had untolerated taint(s), 4 Insufficient memory. no new claims to deallocate, preemption: 0/5 nodes are available: 1 Preemption is not helpful for scheduling, 4 No preemption victims found for incoming pod.
+100s        Normal    ADD                              service/chroma                tiny-agent/chroma
+99s         Warning   FailedScheduling                 pod/chroma-59b5787c8-r5hrm    0/5 nodes are available: 1 Insufficient cpu, 2 node(s) had untolerated taint(s), 3 Insufficient memory. no new claims to deallocate, preemption: 0/5 nodes are available: 2 Preemption is not helpful for scheduling, 3 No preemption victims found for incoming pod.
+96s         Normal    DNSRecordProvisioningSucceeded   service/chroma                DNS records updated
+96s         Normal    Scheduled                        pod/chroma-59b5787c8-r5hrm    Successfully assigned tiny-agent/chroma-59b5787c8-r5hrm to gk3-c8-labs-sravana-ap-21-pool-1-9825ce2a-qrbt
+91s         Normal    SuccessfulAttachVolume           pod/chroma-59b5787c8-r5hrm    AttachVolume.Attach succeeded for volume "pvc-54dde537-71be-44b1-a1d7-e5afa9839236"
+81s         Normal    Pulled                           pod/chroma-59b5787c8-r5hrm    Successfully pulled image "chromadb/chroma:latest" in 5.095s (5.095s including waiting). Image size: 176177449 bytes.
+78s         Normal    Pulled                           pod/chroma-59b5787c8-r5hrm    Successfully pulled image "chromadb/chroma:latest" in 418ms (418ms including waiting). Image size: 176177449 bytes.
+63s         Normal    Pulled                           pod/chroma-59b5787c8-r5hrm    Successfully pulled image "chromadb/chroma:latest" in 542ms (542ms including waiting). Image size: 176177449 bytes.
+39s         Normal    Pulling                          pod/chroma-59b5787c8-r5hrm    Pulling image "chromadb/chroma:latest"
+39s         Normal    Created                          pod/chroma-59b5787c8-r5hrm    Container created
+39s         Normal    Started                          pod/chroma-59b5787c8-r5hrm    Container started
+39s         Normal    Pulled                           pod/chroma-59b5787c8-r5hrm    Successfully pulled image "chromadb/chroma:latest" in 570ms (570ms including waiting). Image size: 176177449 bytes.
+38s         Warning   BackOff                          pod/chroma-59b5787c8-r5hrm    Back-off restarting failed container chroma in pod chroma-59b5787c8-r5hrm_tiny-agent(70cee6ce-73fa-4097-9709-5db0c7fed520)

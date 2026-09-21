@@ -1,0 +1,39 @@
+GKE cluster
+└── tiny-agent namespace
+    │
+    ├── MinIO
+    │    └── Original documents
+    │
+    ├── Chroma
+    │    └── Embeddings
+    │
+    └── Ollama
+         └── Qwen3-Embedding-0.6B    <-- Let's get to this part !
+
+
+###
+# Install Embedding via Ollama
+kubectl apply -f ollama.yaml
+
+kubectl get pvc -n tiny-agent
+
+kubectl port-forward -n tiny-agent svc/ollama 11434:11434
+
+curl http://localhost:11434/api/tags
+
+
+###
+# 3. Download Qwen3-Embedding-0.6B
+# Now execute the Ollama CLI inside the Kubernetes pod:
+# First get the pod name:
+kubectl get pods -n tiny-agent -l app=ollama
+
+kubectl exec -it -n tiny-agent deploy/ollama -- ollama pull qwen3-embedding:0.6b
+
+
+kubectl exec -it -n tiny-agent deploy/ollama -- ollama list
+
+# Test it with sample invocation
+curl -s http://localhost:11434/api/embed \
+  -H "Content-Type: application/json" \
+  -d '{"model":"qwen3-embedding:0.6b","input":"Camunda 8 runs workflow processes using Zeebe."}'

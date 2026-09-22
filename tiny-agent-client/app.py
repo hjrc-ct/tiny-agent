@@ -51,7 +51,7 @@ CHAT_MODEL = os.getenv(
 CHUNK_SIZE = 1200
 CHUNK_OVERLAP = 200
 
-OLLAMA_TIMEOUT = 120
+OLLAMA_TIMEOUT = 180
 
 
 # ============================================================
@@ -539,7 +539,7 @@ Answer using only the knowledge-base context.
             "stream": False,
             "think": False,
             "options": {
-                "num_predict": 256,
+                "num_predict": 64,
                 "temperature": 0.1
             },
         },

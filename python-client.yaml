@@ -21,7 +21,7 @@ spec:
       containers:
         - name: python-client
 
-          image: asia-south2-docker.pkg.dev/c8-labs/tiny-agent/python-client:v9
+          image: asia-south2-docker.pkg.dev/c8-labs/tiny-agent/python-client:v1
 
           env:
             - name: MINIO_ENDPOINT

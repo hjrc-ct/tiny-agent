@@ -1,0 +1,79 @@
+##### Example log when the "/ask" API response is 200
+####
+###
+##
+srv  update_slots: all slots are idle
+slot get_availabl: id  0 | task -1 |  - checking sim = 1.000 (6/6) > 0.100
+slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 1.000 (> 0.100 thold), f_keep = 1.000
+slot launch_slot_: id  0 | task 6 | processing task, is_child = 0
+slot   operator(): id  0 | task 6 | new prompt, n_ctx_slot = 4096, n_keep = 0, task.n_tokens = 6
+slot   operator(): id  0 | task 6 | need to evaluate at least 1 token for each active slot (n_past = 6, task.n_tokens() = 6)
+slot   operator(): id  0 | task 6 | n_past was set to 5
+slot   operator(): id  0 | task 6 | cached n_tokens = 5, memory_seq_rm [5, end)
+slot      release: id  0 | task 6 | stop processing: n_tokens = 6, truncated = 0
+srv  update_slots: all slots are idle
+[GIN] 2026/09/22 - 06:09:11 | 200 |   2.22593219s |      10.4.1.200 | POST     "/api/embed"
+srv  server_strea: conv_id= (empty=1)
+slot get_availabl: id  0 | task -1 |  - checking sim = 1.000 (984/984) > 0.100
+slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 1.000 (> 0.100 thold), f_keep = 0.969
+slot launch_slot_: id  0 | task -1 | sampler chain: logits -> ?penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> ?min-p -> ?xtc -> temp-ext -> dist
+slot launch_slot_: id  0 | task -1 | sampler params:
+	repeat_last_n = 64, repeat_penalty = 1.000, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 20, top_p = 0.950, min_p = 0.000, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.100
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+slot launch_slot_: id  0 | task 118 | processing task, is_child = 0
+slot   operator(): id  0 | task 118 | new prompt, n_ctx_slot = 4096, n_keep = 4, task.n_tokens = 984
+slot   operator(): id  0 | task 118 | need to evaluate at least 1 token for each active slot (n_past = 984, task.n_tokens() = 984)
+slot   operator(): id  0 | task 118 | n_past was set to 983
+slot   operator(): id  0 | task 118 | cached n_tokens = 983, memory_seq_rm [983, end)
+slot init_sampler: id  0 | task 118 | init sampler, took 0.21 ms, tokens: text = 984, total = 984
+slot print_timing: id  0 | task 118 | prompt eval time =    2426.94 ms /     1 tokens ( 2426.94 ms per token,     0.41 tokens per second)
+slot print_timing: id  0 | task 118 |        eval time =  100952.73 ms /    47 tokens ( 2194.62 ms per token,     0.46 tokens per second)
+slot print_timing: id  0 | task 118 |       total time =  103379.67 ms /    48 tokens
+slot print_timing: id  0 | task 118 |    graphs reused =        150
+slot      release: id  0 | task 118 | stop processing: n_tokens = 1030, truncated = 0
+srv  update_slots: all slots are idle
+[GIN] 2026/09/22 - 06:10:55 | 200 |         1m43s |      10.4.1.200 | POST     "/api/chat"
+
+
+##### Example log when the "/ask" API response is 500
+####
+###
+##
+slot get_availabl: id  0 | task -1 |  - checking sim = 0.286 (2/7) > 0.100
+slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.286 (> 0.100 thold), f_keep = 0.333
+slot launch_slot_: id  0 | task 8 | processing task, is_child = 0
+slot   operator(): id  0 | task 8 | new prompt, n_ctx_slot = 4096, n_keep = 0, task.n_tokens = 7
+slot   operator(): id  0 | task 8 | cached n_tokens = 2, memory_seq_rm [2, end)
+slot      release: id  0 | task 8 | stop processing: n_tokens = 7, truncated = 0
+srv  update_slots: all slots are idle
+[GIN] 2026/09/22 - 06:13:19 | 200 |  2.243167797s |      10.4.1.200 | POST     "/api/embed"
+srv  server_strea: conv_id= (empty=1)
+slot get_availabl: id  0 | task -1 |  - checking sim = 0.134 (135/1006) > 0.100
+slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.134 (> 0.100 thold), f_keep = 0.131
+srv  get_availabl: updating prompt cache
+srv   prompt_save:  - saving prompt with length 1030, total state size = 112.669 MiB (draft: 0.000 MiB)
+srv          load:  - looking for better prompt, base f_keep = 0.131, f_sim = 0.134
+srv          load:    - prompt with length    1060, lcp =    1006, f_keep = 0.949, f_sim = 1.000
+srv          load:    - prompt with length    1030, lcp =     135, f_keep = 0.131, f_sim = 0.134
+srv          load:  - found better prompt with f_keep = 0.949, f_sim = 1.000
+srv        update:  - cache state: 1 prompts, 112.669 MiB (limits: 8192.000 MiB, 4096 tokens, 74890 est)
+srv        update:    - prompt 0xdb542f0:    1030 tokens, checkpoints:  0,   112.669 MiB
+srv  get_availabl: prompt cache update took 449.12 ms
+slot launch_slot_: id  0 | task -1 | sampler chain: logits -> ?penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> ?min-p -> ?xtc -> temp-ext -> dist
+slot launch_slot_: id  0 | task -1 | sampler params:
+	repeat_last_n = 64, repeat_penalty = 1.000, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 20, top_p = 0.950, min_p = 0.000, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.100
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+slot launch_slot_: id  0 | task 166 | processing task, is_child = 0
+slot   operator(): id  0 | task 166 | new prompt, n_ctx_slot = 4096, n_keep = 4, task.n_tokens = 1006
+slot   operator(): id  0 | task 166 | need to evaluate at least 1 token for each active slot (n_past = 1006, task.n_tokens() = 1006)
+slot   operator(): id  0 | task 166 | n_past was set to 1005
+slot   operator(): id  0 | task 166 | cached n_tokens = 1005, memory_seq_rm [1005, end)
+slot init_sampler: id  0 | task 166 | init sampler, took 0.27 ms, tokens: text = 1006, total = 1006
+[GIN] 2026/09/22 - 06:15:20 | 500 |          2m0s |      10.4.1.200 | POST     "/api/chat"
+srv          stop: cancel task, id_task = 166
+slot      release: id  0 | task 166 | stop processing: n_tokens = 1060, truncated = 0
+srv  update_slots: all slots are idle

@@ -7,6 +7,8 @@ from typing import List
 import chromadb
 import requests
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse 
+from fastapi.staticfiles import StaticFiles
 from minio import Minio
 import fitz
 import uvicorn
@@ -76,6 +78,8 @@ collection = chroma_client.get_or_create_collection(
 
 app = FastAPI(title="Tiny Agent")
 
+# Serve static files 
+app.mount( "/static", StaticFiles(directory="static"), name="static" )
 
 # ============================================================
 # MinIO
@@ -539,7 +543,7 @@ Answer using only the knowledge-base context.
             "stream": False,
             "think": False,
             "options": {
-                "num_predict": 64,
+                "num_predict": 128,
                 "temperature": 0.1
             },
         },
@@ -568,6 +572,11 @@ Answer using only the knowledge-base context.
 # ============================================================
 # API
 # ============================================================
+
+# Render the web UI 
+@app.get("/") 
+def home(): 
+    return FileResponse("static/index.html")
 
 @app.get("/health")
 def health():

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Tiny Agent</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                         Roboto, Helvetica, Arial, sans-serif;
+            background: #f6f7f9;
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 32px 20px 60px;
+        }
+
+        header {
+            margin-bottom: 28px;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            font-size: 13px;
+            color: #15803d;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 18px;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        .knowledge-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .knowledge-info {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .primary {
+            background: #111827;
+            color: white;
+        }
+
+        .primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 110px;
+            resize: vertical;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 12px;
+            font: inherit;
+            font-size: 15px;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: #6b7280;
+        }
+
+        .ask-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .hint {
+            color: #9ca3af;
+            font-size: 12px;
+        }
+
+        .answer {
+            white-space: pre-wrap;
+            line-height: 1.65;
+            font-size: 15px;
+        }
+
+        .generating {
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .source {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+            background: #fafafa;
+        }
+
+        .source-number {
+            font-size: 12px;
+            font-weight: 700;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .source-file {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .source-chunk {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 3px;
+        }
+
+        .message {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .success {
+            color: #15803d;
+        }
+
+        .error {
+            color: #b91c1c;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px 14px 40px;
+            }
+
+            .knowledge-row,
+            .ask-row {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+        <div class="title">Tiny Agent</div>
+
+        <div class="subtitle">
+            Private knowledge assistant
+        </div>
+
+        <div class="status">
+            <span class="status-dot"></span>
+            <span id="statusText">Checking...</span>
+        </div>
+    </header>
+
+
+    <!-- Knowledge -->
+
+    <div class="card">
+
+        <div class="card-title">
+            Knowledge
+        </div>
+
+        <div class="knowledge-row">
+
+            <div class="knowledge-info">
+                <span id="chunkCount">Checking index...</span>
+            </div>
+
+            <button
+                id="indexButton"
+                class="secondary"
+                onclick="reindex()">
+                Re-index Knowledge
+            </button>
+
+        </div>
+
+        <div id="indexMessage" class="message hidden"></div>
+
+    </div>
+
+
+    <!-- Ask -->
+
+    <div class="card">
+
+        <div class="card-title">
+            Ask a question
+        </div>
+
+        <textarea
+            id="question"
+            placeholder="Ask something about your knowledge base..."
+        ></textarea>
+
+        <div class="ask-row">
+
+            <div class="hint">
+                Enter to ask · Shift+Enter for new line
+            </div>
+
+            <button
+                id="askButton"
+                class="primary"
+                onclick="askQuestion()">
+                Ask
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- Answer -->
+
+    <div id="answerCard" class="card hidden">
+
+        <div class="card-title">
+            Answer
+        </div>
+
+        <div id="answer" class="answer"></div>
+
+    </div>
+
+
+    <!-- Sources -->
+
+    <div id="sourcesCard" class="card hidden">
+
+        <div class="card-title">
+            Sources
+        </div>
+
+        <div id="sources"></div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+async function loadHealth() {
+
+    try {
+
+        const response = await fetch("/health");
+
+        if (!response.ok) {
+            throw new Error("Health check failed");
+        }
+
+        const data = await response.json();
+
+        document.getElementById("statusText").textContent = "Online";
+
+        if (data.count !== undefined) {
+            document.getElementById("chunkCount").textContent =
+                `${data.count} knowledge chunks indexed`;
+        } else {
+            document.getElementById("chunkCount").textContent =
+                "Knowledge index available";
+        }
+
+    } catch (error) {
+
+        document.getElementById("statusText").textContent =
+            "Unavailable";
+
+        document.getElementById("chunkCount").textContent =
+            "Unable to read knowledge index";
+    }
+}
+
+
+async function reindex() {
+
+    const button = document.getElementById("indexButton");
+    const message = document.getElementById("indexMessage");
+
+    button.disabled = true;
+    button.textContent = "Indexing...";
+
+    message.className = "message";
+    message.textContent = "Reading documents and rebuilding the index...";
+
+    try {
+
+        const response = await fetch(
+            "/ingest?reset=true",
+            {
+                method: "POST"
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.detail || "Indexing failed"
+            );
+        }
+
+        message.className = "message success";
+
+        message.textContent =
+            `Knowledge indexed successfully. ${data.count || ""} chunks processed.`;
+
+        await loadHealth();
+
+    } catch (error) {
+
+        message.className = "message error";
+
+        message.textContent =
+            `Indexing failed: ${error.message}`;
+
+    } finally {
+
+        button.disabled = false;
+        button.textContent = "Re-index Knowledge";
+    }
+}
+
+
+async function askQuestion() {
+
+    const questionBox = document.getElementById("question");
+    const askButton = document.getElementById("askButton");
+
+    const answerCard = document.getElementById("answerCard");
+    const answer = document.getElementById("answer");
+
+    const sourcesCard = document.getElementById("sourcesCard");
+    const sources = document.getElementById("sources");
+
+    const question = questionBox.value.trim();
+
+    if (!question) {
+        questionBox.focus();
+        return;
+    }
+
+    askButton.disabled = true;
+    askButton.textContent = "Generating...";
+
+    answerCard.classList.remove("hidden");
+
+    answer.className = "answer generating";
+    answer.textContent = "Generating answer...";
+
+    sourcesCard.classList.add("hidden");
+    sources.innerHTML = "";
+
+    try {
+
+        const response = await fetch(`/ask?n=3&q=${encodeURIComponent(question)}`, {
+
+            method: "GET",
+
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.detail || "Request failed"
+            );
+        }
+
+        answer.className = "answer";
+
+        answer.textContent =
+            data.answer || "No answer returned.";
+
+        if (data.sources && data.sources.length > 0) {
+
+            sourcesCard.classList.remove("hidden");
+
+            data.sources.forEach((source, index) => {
+
+                const sourceDiv =
+                    document.createElement("div");
+
+                sourceDiv.className = "source";
+
+                sourceDiv.innerHTML = `
+                    <div class="source-number">
+                        SOURCE ${index + 1}
+                    </div>
+
+                    <div class="source-file">
+                        ${escapeHtml(source.source || "Unknown")}
+                    </div>
+
+                    <div class="source-chunk">
+                        Chunk ${source.chunk ?? "-"}
+                    </div>
+                `;
+
+                sources.appendChild(sourceDiv);
+
+            });
+
+        }
+
+    } catch (error) {
+
+        answer.className = "answer error";
+
+        answer.textContent =
+            `Unable to generate an answer: ${error.message}`;
+
+    } finally {
+
+        askButton.disabled = false;
+        askButton.textContent = "Ask";
+
+    }
+}
+
+
+function escapeHtml(value) {
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+}
+
+
+document.getElementById("question").addEventListener(
+    "keydown",
+    function(event) {
+
+        if (
+            event.key === "Enter" &&
+            !event.shiftKey
+        ) {
+
+            event.preventDefault();
+
+            askQuestion();
+        }
+
+    }
+);
+
+
+loadHealth();
+
+</script>
+
+</body>
+</html>

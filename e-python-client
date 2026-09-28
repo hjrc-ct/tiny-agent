@@ -9,11 +9,9 @@
 
 # Make sure you are in the Python client folder: pwd -> ./tiny-agent-client
 
-gcloud artifacts repositories create tiny-agent \
-  --repository-format=docker \
-  --location=asia-south2
+# gcloud artifacts repositories create tiny-agent   --repository-format=docker  --location=asia-south2
 
-gcloud auth configure-docker asia-south2-docker.pkg.dev
+# gcloud auth configure-docker asia-south2-docker.pkg.dev
 
 # Lets go to python client directory
 cd ./tiny-agent-client

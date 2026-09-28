@@ -5,7 +5,7 @@ gcp auth login
 gcloud container clusters get-credentials c8-labs-sravana-ap-21 --region asia-south2 --project c8-labs
 
 
-# create namespace tiny-agent
-kubectl create namespace tiny-agent
+# create namespace
+kubectl create namespace ${UNAMESPACE}
 
-kubectl get namespace tiny-agent
+kubectl get namespace ${UNAMESPACE}

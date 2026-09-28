@@ -1,5 +1,6 @@
 # Run Chroma installation. See debug commands at the end of this file.
 envsubst '${UNAMESPACE}' < chroma.yaml  | kubectl apply  -f -
+# Wait for say 30 seconds ... until the pod is ready
 
 kubectl get pods -n ${UNAMESPACE}
 

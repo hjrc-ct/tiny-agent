@@ -14,6 +14,8 @@ GKE cluster
 ###
 # Install Embedding via Ollama
 envsubst '${UNAMESPACE}' < ollama.yaml  | kubectl apply  -f -
+# wait for up to 3 mins or so
+
 
 kubectl get pvc -n ${UNAMESPACE}
 

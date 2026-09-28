@@ -7,7 +7,7 @@ replicas: 1
 
 persistence:
   enabled: true
-  size: 20Gi
+  size: 2Gi
 
 resources:
   requests:

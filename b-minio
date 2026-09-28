@@ -5,16 +5,19 @@ helm repo update
 MINIOROOTPWD=makelabs envsubst < minio-values.yaml > minio-values.my-ns.yaml
 
 helm upgrade --install minio minio/minio \
-  --namespace tiny-agent \
-  --values minio-values.my-ns.yaml
+  --namespace ${UNAMESPACE} \
+  -f minio-values.my-ns.yaml \
+  --set image.registry=quay.io \
+  --set image.repository=milvusdb/minio \
+  --set image.tag=RELEASE.2024-12-18T13-15-44Z 
 # At this point, you have the minio pod running. (you may have to wait a minute or so)
 
 
 ###
 # Use Project Lens app or below two commands, to set port-forward
-export POD_NAME=$(kubectl get pods --namespace tiny-agent -l "release=minio" -o jsonpath="{.items[0].metadata.name}")
+export POD_NAME=$(kubectl get pods --namespace ${UNAMESPACE} -l "release=minio" -o jsonpath="{.items[0].metadata.name}")
 
-kubectl port-forward $POD_NAME 9001 --namespace tiny-agent
+kubectl port-forward $POD_NAME 9001 --namespace ${UNAMESPACE}
 # run port forward to enable access via your laptop
 # such as http://localhost:9001/buckets
 

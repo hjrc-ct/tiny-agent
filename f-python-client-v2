@@ -1,20 +1,22 @@
 # Let's include Qwen3 LLM and new API service "/ask"
 #
-kubectl exec -it -n tiny-agent deployment/ollama -- \
+kubectl exec -it -n ${UNAMESPACE} deployment/ollama -- \
   ollama pull qwen3:1.7b
 
-kubectl exec -it -n tiny-agent deployment/ollama -- \
+kubectl exec -it -n ${UNAMESPACE} deployment/ollama -- \
   ollama list
 
 # Test ollama directly to see if it works
-kubectl exec -it -n tiny-agent deployment/ollama -- \
+kubectl exec -it -n ${UNAMESPACE} deployment/ollama -- \
   ollama run qwen3:1.7b \
   "What is Zeebe?"
 
 kubectl port-forward \
-  -n tiny-agent \
+  -n ${UNAMESPACE} \
   svc/python-client \
   8080:8080
+
+# Upload the two files to the MinIO bucket -> knowledge
 
 # Rebuild the knowledge
 curl -X POST \

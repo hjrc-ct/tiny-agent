@@ -1,5 +1,5 @@
 GKE cluster
-└── tiny-agent namespace
+└── ${UNAMESPACE} namespace
     │
     ├── MinIO
     │    └── Original documents
@@ -13,11 +13,11 @@ GKE cluster
 
 ###
 # Install Embedding via Ollama
-kubectl apply -f ollama.yaml
+envsubst '${UNAMESPACE}' < ollama.yaml  | kubectl apply  -f -
 
-kubectl get pvc -n tiny-agent
+kubectl get pvc -n ${UNAMESPACE}
 
-kubectl port-forward -n tiny-agent svc/ollama 11434:11434
+kubectl port-forward -n ${UNAMESPACE} svc/ollama 11434:11434
 
 curl http://localhost:11434/api/tags
 
@@ -26,12 +26,12 @@ curl http://localhost:11434/api/tags
 # 3. Download Qwen3-Embedding-0.6B
 # Now execute the Ollama CLI inside the Kubernetes pod:
 # First get the pod name:
-kubectl get pods -n tiny-agent -l app=ollama
+kubectl get pods -n ${UNAMESPACE} -l app=ollama
 
-kubectl exec -it -n tiny-agent deploy/ollama -- ollama pull qwen3-embedding:0.6b
+kubectl exec -it -n ${UNAMESPACE} deploy/ollama -- ollama pull qwen3-embedding:0.6b
 
 
-kubectl exec -it -n tiny-agent deploy/ollama -- ollama list
+kubectl exec -it -n ${UNAMESPACE} deploy/ollama -- ollama list
 
 # Test it with sample invocation
 curl -s http://localhost:11434/api/embed \

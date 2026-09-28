@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: python-client
-  namespace: tiny-agent
+  namespace: ${UNAMESPACE}
 spec:
   replicas: 1
 
@@ -21,11 +21,12 @@ spec:
       containers:
         - name: python-client
 
-          image: asia-south2-docker.pkg.dev/c8-labs/tiny-agent/python-client:v1
+          image: asia-south2-docker.pkg.dev/c8-labs/tiny-agent/${UNAMESPACE}-python-client:v1
+          imagePullPolicy: Always
 
           env:
             - name: MINIO_ENDPOINT
-              value: "minio.tiny-agent.svc.cluster.local:9000"
+              value: "minio.${UNAMESPACE}.svc.cluster.local:9000"
             - name: MINIO_BUCKET
               value: "knowledge"
             - name: MINIO_ACCESS_KEY
@@ -40,11 +41,11 @@ spec:
                   name: minio
                   key: rootPassword
             - name: CHROMA_HOST
-              value: "chroma.tiny-agent.svc.cluster.local"
+              value: "chroma.${UNAMESPACE}.svc.cluster.local"
             - name: CHROMA_PORT
               value: "8000"
             - name: OLLAMA_URL
-              value: "http://ollama.tiny-agent.svc.cluster.local:11434"
+              value: "http://ollama.${UNAMESPACE}.svc.cluster.local:11434"
             - name: EMBED_MODEL
               value: "qwen3-embedding:0.6b"
             - name: CHAT_MODEL
@@ -66,7 +67,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: python-client
-  namespace: tiny-agent
+  namespace: ${UNAMESPACE}
 spec:
   selector:
     app: python-client

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: ollama-data
-  namespace: tiny-agent
+  namespace: ${UNAMESPACE}
 spec:
   accessModes:
     - ReadWriteOnce
@@ -14,7 +14,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ollama
-  namespace: tiny-agent
+  namespace: ${UNAMESPACE}
 spec:
   replicas: 1
   selector:
@@ -43,10 +43,10 @@ spec:
           resources:
             requests:
               cpu: "2"
-              memory: "6Gi"
+              memory: "3Gi"
             limits:
-              cpu: "4"
-              memory: "8Gi"
+              cpu: "2"
+              memory: "3Gi"
 
           volumeMounts:
             - name: ollama-data
@@ -61,7 +61,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ollama
-  namespace: tiny-agent
+  namespace: ${UNAMESPACE}
 spec:
   type: ClusterIP
   selector:

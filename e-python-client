@@ -15,14 +15,27 @@ gcloud artifacts repositories create tiny-agent \
 
 gcloud auth configure-docker asia-south2-docker.pkg.dev
 
-docker build -t asia-south2-docker.pkg.dev/c8-labs/tiny-agent/python-client:v1 .
+# Lets go to python client directory
+cd ./tiny-agent-client
 
-docker push asia-south2-docker.pkg.dev/c8-labs/tiny-agent/python-client:v1
+docker build -t asia-south2-docker.pkg.dev/c8-labs/tiny-agent/${UNAMESPACE}-python-client:v1 .
 
-# Go back to the parent folder and deploy the service: python client
-kubectl apply -f ../python-client.yaml
 
-kubectl port-forward  -n tiny-agent  svc/python-client   8080:8080
+# docker push asia-south2-docker.pkg.dev/c8-labs/tiny-agent/${UNAMESPACE}-python-client:v1
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t asia-south2-docker.pkg.dev/c8-labs/tiny-agent/${UNAMESPACE}-python-client:v1 \
+  --push .
+
+# Lets return to parent directory
+cd ..
+
+# Go back to the parent folder and deploy the service: python-client
+envsubst '${UNAMESPACE}' < python-client.yaml  | kubectl apply  -f -
+# wait until the pod is running. 
+
+
+kubectl port-forward  -n ${UNAMESPACE}  svc/python-client   8080:8080
 
 # Test the health of python client
 curl "http://localhost:8080/health"

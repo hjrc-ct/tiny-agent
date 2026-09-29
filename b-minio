@@ -24,4 +24,6 @@ kubectl port-forward $POD_NAME 9001 --namespace ${UNAMESPACE}
 ###
 # Using the minio UI, create new bucket: knowledge
 
-# Add two files to this bucket. camunda-faq.txt and camunda-intro.txt
+# Add two TEXT files to this bucket. camunda-faq.txt and camunda-intro.txt
+
+# Add PDF file to this bucket. camunda-labs.pdf

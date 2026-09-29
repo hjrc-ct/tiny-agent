@@ -9,14 +9,14 @@ kubectl exec -it -n ${UNAMESPACE} deployment/ollama -- \
 # Test ollama directly to see if it works
 kubectl exec -it -n ${UNAMESPACE} deployment/ollama -- \
   ollama run qwen3:1.7b \
-  "What is Zeebe?"
+  "What is C8 Labs Zeebe?"
 
 kubectl port-forward \
   -n ${UNAMESPACE} \
   svc/python-client \
   8080:8080
 
-# Upload the two files to the MinIO bucket -> knowledge
+# Upload the two text files and one pdf to the MinIO bucket -> knowledge
 
 # Rebuild the knowledge
 curl -X POST \
@@ -25,7 +25,15 @@ curl -X POST \
 
 
 # Test retrieval / search API
-curl "http://localhost:8080/search?q=What%20is%20Zeebe&n=5"
+curl "http://localhost:8080/search?q=What%20is%20C8%20Labs%20Zeebe&n=5"
 
 # Test API call: "/ask"
-curl "http://localhost:8080/ask?q=What%20is%20Zeebe&n=5"
+curl "http://localhost:8080/ask?q=What%20is%20C8%20Labs%20Zeebe&n=5"
+
+# Visit the site Tiny-Agent via Chrome browser: 
+# http://localhost:8080/
+# Ask Question #1 => summarise C8 labs
+# Ask Question #2 => who to contact about C8 labs
+# Ask Question #3 => is it available for free
+# Ask Question #4 => give me info about access plan
+# etc

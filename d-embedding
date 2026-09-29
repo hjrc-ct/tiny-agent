@@ -22,7 +22,7 @@ kubectl get pvc -n ${UNAMESPACE}
 kubectl port-forward -n ${UNAMESPACE} svc/ollama 11434:11434
 
 curl http://localhost:11434/api/tags
-
+# Expected output - empty models json - {"models":[]}
 
 ###
 # 3. Download Qwen3-Embedding-0.6B

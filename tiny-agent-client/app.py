@@ -7,6 +7,7 @@ from typing import List
 import chromadb
 import requests
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse 
 from fastapi.staticfiles import StaticFiles
 from minio import Minio
@@ -78,6 +79,15 @@ collection = chroma_client.get_or_create_collection(
 )
 
 app = FastAPI(title="Tiny Agent")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://c8-labs.makelabs.in",
+    ],
+    allow_credentials=False,
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
 
 # Serve static files 
 app.mount( "/static", StaticFiles(directory="static"), name="static" )

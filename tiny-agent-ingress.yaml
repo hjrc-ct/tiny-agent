@@ -1,0 +1,60 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: python-client-backendconfig
+  namespace: ${UNAMESPACE}
+spec:
+  healthCheck:
+    requestPath: /health
+    port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${UNAMESPACE}-python-client
+  namespace: ${UNAMESPACE}
+  annotations:
+    cloud.google.com/backend-config: '{"default": "python-client-backendconfig"}'
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: ${UNAMESPACE}-python-client
+    app.kubernetes.io/instance: ${UNAMESPACE}
+  ports:
+
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ${UNAMESPACE}-ingress-python-client
+  namespace: ${UNAMESPACE}
+  labels:
+    app: python-client
+    app.kubernetes.io/instance: ${UNAMESPACE}
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    meta.helm.sh/release-name: ${UNAMESPACE}
+    meta.helm.sh/release-namespace: ${UNAMESPACE}
+    kubernetes.io/ingress.allow-http: "false"  # on ingress, we only allow HTTPS. 
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP" # Tell GKE to use HTTPS to backend
+spec:
+  tls:
+    - hosts:
+        - ${UNAMESPACE}.makelabs.in
+      secretName: cf-origin-cert
+  ingressClassName: "nginx"
+  rules:
+    - host: ${UNAMESPACE}.makelabs.in
+      http:
+        paths:
+          - path: /ask
+            pathType: Prefix
+            backend:
+              service:
+                name: python-client
+                port:
+                  number: 8080

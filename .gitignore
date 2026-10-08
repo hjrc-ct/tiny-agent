@@ -1,3 +1,7 @@
 minio-values.my-ns.yaml
 tiny-agent-client/.DS_Store
 .DS_Store
+cert-fullchain-c8-labs.pem
+cert-key-c8-labs.key
+cert-origin_ca_rsa_root.pem
+cert-public-c8-labs.key

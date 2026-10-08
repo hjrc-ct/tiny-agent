@@ -37,3 +37,6 @@ curl "http://localhost:8080/ask?q=What%20is%20C8%20Labs%20Zeebe&n=5"
 # Ask Question #3 => is it available for free
 # Ask Question #4 => give me info about access plan
 # etc
+
+# Ingress definition
+envsubst '${UNAMESPACE}' < tiny-agent-ingress.yaml | kubectl apply -f -

@@ -50,8 +50,9 @@ CHAT_MODEL = os.getenv(
     "qwen3:1.7b"
 )
 
-CHUNK_SIZE = 1200
-CHUNK_OVERLAP = 200
+CHUNK_SIZE = 500
+CHUNK_OVERLAP = 50
+NUM_PREDICT = 48
 
 OLLAMA_TIMEOUT = 180
 
@@ -543,7 +544,7 @@ Answer using only the knowledge-base context.
             "stream": False,
             "think": False,
             "options": {
-                "num_predict": 128,
+                "num_predict": NUM_PREDICT,
                 "temperature": 0.1
             },
         },

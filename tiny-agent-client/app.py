@@ -1,6 +1,7 @@
 import hashlib
 import io
 import os
+import re
 import time
 from typing import List
 
@@ -203,6 +204,41 @@ def chunk_text(
     return chunks
 
 
+def chunk_text_by_paragraph(
+    text: str,
+    chunk_size: int = CHUNK_SIZE,
+) -> List[str]:
+
+    text = text.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+    if not text:
+        return []
+
+    chunks = []
+
+    for paragraph in re.split(r"\n[ \t]*\n+", text):
+        paragraph = paragraph.strip()
+
+        if not paragraph:
+            continue
+
+        if len(paragraph) > chunk_size:
+            midpoint = len(paragraph) // 2
+            split_at = paragraph.rfind(" ", 0, midpoint)
+
+            if split_at <= 0:
+                split_at = midpoint
+
+            chunks.extend((
+                paragraph[:split_at].strip(),
+                paragraph[split_at:].strip(),
+            ))
+        else:
+            chunks.append(paragraph)
+
+    return chunks
+
+
 # ============================================================
 # Embeddings
 # ============================================================
@@ -291,7 +327,10 @@ def ingest_object(obj):
         data
     )
 
-    chunks = chunk_text(text)
+    if object_name.lower().endswith(".txt"):
+        chunks = chunk_text_by_paragraph(text)
+    else:
+        chunks = chunk_text(text)
 
     if not chunks:
         print(

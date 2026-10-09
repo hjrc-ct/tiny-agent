@@ -1,0 +1,22 @@
+Camunda Version supported
+C8 Labs supports Camunda Self Managed version 8.9.7, Helm Version 14.4.1, Released on 11 Jun, 2026 
+
+Whats involved in the hands on labs?
+C8 Labs course includes 15+ Guided Execution Steps. Once completed you will see 15 pods running the orchestration cluster including application monitoring with prometheus and grafana.
+
+Udemy practice exam
+C8 Labs also has Udemy Practice Exam to validate your Camunda 8.9 Self-Managed knowledge after completing the hands-on labs. Exam includes 70 Questions on Architecture, Operations and Troubleshooting.
+
+Get Started
+Free Tier – During Community Events. Start your 6-hour hands-on lab. Free Tier is applicable during select time intervals - such as Community Events. No waiting, no manual approval. Use the Sign In button and verify your email with a one-time password (OTP).
+Premium Tier – Online purchase available. 48-hours duration. Web portal navigates the user with instructions for payment. After making the payment, in a matter of seconds, you get instant access to the learning platform. Use the Sign In button and Google as Identity Provider.
+
+Lab Gallery set of images
+Visual summary of lab execution steps and environment snapshots from the course are captured in the form of images.
+26 snapshot images from the hands-on labs.
+
+C8 Labs includes 13 learning exercises divided into four sections.
+Lab Exercise #a - Know the new Camunda deployed cluster - Six exercises
+Lab Exercise #b - Connector and Grafana - Three exercises
+Lab Exercise #c - Orchestration Cluster Operations and Resilience - Two exercises
+Lab Exercise #d - Orchestration Engine - Two exercises

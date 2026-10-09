@@ -487,8 +487,6 @@ def build_context(results):
 
         parts.append(
             f"[SOURCE {index}]\n"
-            f"Document: {source}\n"
-            f"Chunk: {chunk}\n"
             f"Content:\n{text}"
         )
 
@@ -505,37 +503,12 @@ def generate_answer(
 ):
 
     system_prompt = """
-You are a private knowledge-base assistant.
-
-Answer the user's question using ONLY the supplied
-knowledge-base context.
-
-Rules:
-
-1. Do not use outside knowledge.
-2. Do not invent facts.
-3. Do not assume information that is not present.
-4. If the context does not contain enough information,
-   say that the available documents do not provide
-   enough information to answer the question.
-5. When making a factual statement, cite the relevant
-   source using [SOURCE N].
-6. Keep the answer concise and useful.
+Answer using only the supplied context. Do not infer or add facts.
+If the context is insufficient, say so. Cite factual claims as [SOURCE N]. 
+Be concise.
 """.strip()
 
-    user_prompt = f"""
-Knowledge-base context:
-
-{context}
-
----
-
-Question:
-
-{question}
-
-Answer using only the knowledge-base context.
-""".strip()
+    user_prompt = f"Context:\n{context}\n\nQuestion: {question}"
 
     response = requests.post(
         f"{OLLAMA_URL}/api/chat",
